@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Detection Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-layout">
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1>Flood AI</h1>
+            </header>
+
+            <div class="content-scroll">
+                <div class="system-status">
+                    <span class="dot"></span> SYSTEM STATUS: ONLINE
+                </div>
+                
+                <h1 class="page-title">Flood Area Segmentation</h1>
+                <p class="page-subtitle">Upload aerial imagery to instantly run inference using the locally loaded U-Net model. Results are processed and returned by the FastAPI backend.</p>
+
+                <!-- Input Panel -->
+                <div class="panel upload-panel">
+                    <div class="upload-grid">
+                        <div class="upload-col">
+                            <div class="panel-label">Primary Aerial Data <span>*Required</span></div>
+                            <div id="drop-zone" class="drop-zone">
+                                <input type="file" id="file-input" accept="image/*" hidden>
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                <p><strong>Drag & drop aerial imagery</strong><br>or click to browse</p>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-col">
+                            <div class="panel-label">Ground Truth Mask <span>*Optional</span></div>
+                            <div id="mask-drop-zone" class="drop-zone">
+                                <input type="file" id="mask-file-input" accept="image/*" hidden>
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                    <polyline points="2 17 12 22 22 17"></polyline>
+                                    <polyline points="2 12 12 17 22 12"></polyline>
+                                </svg>
+                                <p><strong>Drag & drop mask file</strong><br>For comparison metrics</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <div class="model-indicator" id="model-indicator">
+                            <span class="dot grey"></span> Waiting for input...
+                        </div>
+                        <button id="run-btn" class="btn primary-btn disabled" disabled>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Run Prediction
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Panel (Hidden initially) -->
+                <div id="results" class="panel results-panel hidden">
+                    <div class="panel-label">Inference Result</div>
+                    <div class="results-grid">
+                        <div class="image-container">
+                            <img id="original-image" alt="Original Image">
+                            <img id="mask-overlay" alt="Flood Mask Overlay">
+                        </div>
+                        
+                        <!-- Real-time metrics section -->
+                        <div id="realtime-metrics" class="realtime-metrics hidden">
+                            <h3>Real-time Evaluation</h3>
+                            <p>Compared against uploaded Ground Truth mask.</p>
+                            <div class="rt-metric">
+                                <span class="rt-label">Dice Score:</span>
+                                <span class="rt-value" id="rt-dice">--%</span>
+                            </div>
+                            <div class="rt-metric">
+                                <span class="rt-label">IoU:</span>
+                                <span class="rt-value" id="rt-iou">--%</span>
+                            </div>
+                            <div class="rt-metric">
+                                <span class="rt-label">Precision:</span>
+                                <span class="rt-value" id="rt-precision">--%</span>
+                            </div>
+                            <div class="rt-metric">
+                                <span class="rt-label">Recall:</span>
+                                <span class="rt-value" id="rt-recall">--%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Side by side mask comparison -->
+                    <div id="masks-comparison" class="masks-comparison hidden">
+                        <div class="mask-col">
+                            <h4>Predicted Mask</h4>
+                            <img id="predicted-raw-mask" alt="Predicted Mask">
+                        </div>
+                        <div class="mask-col" id="gt-mask-col">
+                            <h4>Ground Truth Mask</h4>
+                            <img id="gt-raw-mask" alt="Ground Truth Mask">
+                        </div>
+                    </div>
+                    
+                    <button id="reset-btn" class="btn secondary-btn">Analyze Another Image</button>
+                </div>
+
+                <!-- Models Performance Section -->
+                <div class="panel metrics-panel">
+                    <div class="panel-label">Model Architectures & Performance</div>
+                    <div class="models-comparison">
+                        <!-- Model 1 -->
+                        <div class="model-card active-model">
+                            <div class="model-badge">Active Deployment</div>
+                            <h3>U-Net (EfficientNet-B3)</h3>
+                            <div class="model-metrics">
+                                <div class="m-item"><span>Dice:</span> <strong>90.90%</strong></div>
+                                <div class="m-item"><span>IoU:</span> <strong>83.37%</strong></div>
+                                <div class="m-item"><span>Precision:</span> <strong>90.99%</strong></div>
+                                <div class="m-item"><span>Recall:</span> <strong>90.91%</strong></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Model 2 -->
+                        <div class="model-card">
+                            <h3>U-Net (ResNet34)</h3>
+                            <div class="model-metrics">
+                                <div class="m-item"><span>Dice:</span> <strong>90.76%</strong></div>
+                                <div class="m-item"><span>IoU:</span> <strong>83.13%</strong></div>
+                                <div class="m-item"><span>Precision:</span> <strong>90.28%</strong></div>
+                                <div class="m-item"><span>Recall:</span> <strong>91.37%</strong></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Model 3 -->
+                        <div class="model-card">
+                            <h3>DeepLabV3+</h3>
+                            <div class="model-metrics">
+                                <div class="m-item"><span>Dice:</span> <strong>90.87%</strong></div>
+                                <div class="m-item"><span>IoU:</span> <strong>83.31%</strong></div>
+                                <div class="m-item"><span>Precision:</span> <strong>91.98%</strong></div>
+                                <div class="m-item"><span>Recall:</span> <strong>89.86%</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <footer class="footer">
+                <p>&copy; 2026 Flood AI. All systems nominal.</p>
+                <div class="footer-links">
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">System Status</a>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
